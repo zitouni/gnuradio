@@ -20,7 +20,9 @@
 # Boston, MA 02110-1301, USA.
 #
 
-from gnuradio import gr, eng_notation
+from PyQt4 import Qt
+
+from gnuradio import gr, eng_notation, qtgui
 from optparse import OptionParser
 from gnuradio.eng_option import eng_option
 import gnuradio.gr.gr_threading as _threading
@@ -28,6 +30,8 @@ import sys, time, math
 
 from gnuradio import digital
 from gnuradio import blocks
+
+import sip
 
 # from current dir
 from uhd_interface import uhd_receiver
@@ -54,7 +58,7 @@ class status_thread(_threading.Thread):
 
 
 class bert_receiver(gr.hier_block2):
-    def __init__(self, bitrate,
+    def __init__(self, qtgui_const_sink, bitrate,
                  constellation, samples_per_symbol,
                  differential, excess_bw, gray_coded,
                  freq_bw, timing_bw, phase_bw,
@@ -65,6 +69,7 @@ class bert_receiver(gr.hier_block2):
                                 gr.io_signature(0, 0, 0))                    # Output signature
         
         self._bitrate = bitrate
+        self._qtgui_const_sink = qtgui_const_sink
 
         self._demod = digital.generic_demod(constellation, differential, 
                                             samples_per_symbol,
@@ -79,6 +84,13 @@ class bert_receiver(gr.hier_block2):
         self._snr_probe = digital.probe_mpsk_snr_est_c(digital.SNR_EST_M2M4, 1000,
                                                        alpha=10.0/self._symbol_rate)
         self.connect(self._demod.time_recov, self._snr_probe)
+
+        #=======================================================================
+        # self.connect(self._demod.freq_recov, self._qtgui_const_sink)
+        #=======================================================================
+        
+        self.connect(self._demod.time_recov, self._qtgui_const_sink)
+        
         
         # Descramble BERT sequence.  A channel error will create 3 incorrect bits
         self._descrambler = digital.descrambler_bb(0x8A, 0x7F, 7) # CCSDS 7-bit descrambler
@@ -102,10 +114,27 @@ class bert_receiver(gr.hier_block2):
 
 
 
-class rx_psk_block(gr.top_block):
+class rx_psk_block(gr.top_block, Qt.QWidget):
     def __init__(self, demod, options):
 
 	gr.top_block.__init__(self, "rx_mpsk")
+        Qt.QWidget.__init__(self)
+        self.setWindowTitle("BER Measurement")
+        try:
+            self.setWindowIcon(Qt.QIcon.fromTheme('gnuradio-grc'))
+        except:
+            pass
+        self.top_scroll_layout = Qt.QVBoxLayout()
+        self.setLayout(self.top_scroll_layout)
+        self.top_scroll = Qt.QScrollArea()
+        self.top_scroll.setFrameStyle(Qt.QFrame.NoFrame)
+        self.top_scroll_layout.addWidget(self.top_scroll)
+        self.top_scroll.setWidgetResizable(True)
+        self.top_widget = Qt.QWidget()
+        self.top_scroll.setWidget(self.top_widget)
+        self.top_layout = Qt.QVBoxLayout(self.top_widget)
+        self.top_grid_layout = Qt.QGridLayout()
+        self.top_layout.addLayout(self.top_grid_layout)
 
         self._demodulator_class = demod
 
@@ -128,9 +157,59 @@ class rx_psk_block(gr.top_block):
             self._source = blocks.file_source(gr.sizeof_gr_complex, options.from_file)
         else:
             self._source = blocks.null_source(gr.sizeof_gr_complex)
+        
+         
+        #Create GUI to see symbols constellation 
+        self.qtgui_const_sink = qtgui.const_sink_c(
+            400, #size
+            "", #name
+            1 #number of inputs
+        )
+        self.qtgui_const_sink.set_update_time(0.1)
+        self.qtgui_const_sink.set_y_axis(-2, 2)
+        self.qtgui_const_sink.set_x_axis(-2, 2)
+        self.qtgui_const_sink.set_trigger_mode(qtgui.TRIG_MODE_FREE, qtgui.TRIG_SLOPE_POS, 0.0, 0, "")
+        self.qtgui_const_sink.enable_autoscale(False)
+        self.qtgui_const_sink.enable_grid(False)
+        self.qtgui_const_sink.enable_axis_labels(True)
+         
+        if not True:
+          self.qtgui_const_sink.disable_legend()
+         
+        labels = ["", "", "", "", "",
+                  "", "", "", "", ""]
+        widths = [1, 1, 1, 1, 1,
+                  1, 1, 1, 1, 1]
+        colors = ["blue", "red", "red", "red", "red",
+                  "red", "red", "red", "red", "red"]
+        styles = [0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0]
+        markers = [0, 0, 0, 0, 0,
+                   0, 0, 0, 0, 0]
+        alphas = [1.0, 1.0, 1.0, 1.0, 1.0,
+                  1.0, 1.0, 1.0, 1.0, 1.0]
+        for i in xrange(1):
+            if len(labels[i]) == 0:
+                self.qtgui_const_sink.set_line_label(i, "Data {0}".format(i))
+            else:
+                self.qtgui_const_sink.set_line_label(i, labels[i])
+            self.qtgui_const_sink.set_line_width(i, widths[i])
+            self.qtgui_const_sink.set_line_color(i, colors[i])
+            self.qtgui_const_sink.set_line_style(i, styles[i])
+            self.qtgui_const_sink.set_line_marker(i, markers[i])
+            self.qtgui_const_sink.set_line_alpha(i, alphas[i])
+         
+        self._qtgui_const_sink_win = sip.wrapinstance(self.qtgui_const_sink.pyqwidget(), Qt.QWidget)
+        self.top_layout.addWidget(self._qtgui_const_sink_win)        
+ 
+        #=======================================================================
+        # self.connect(self._source, self.qtgui_const_sink)
+        #=======================================================================
+         
 
         # Create the BERT receiver
-        self._receiver = bert_receiver(options.bitrate,
+        self._receiver = bert_receiver(self.qtgui_const_sink,
+                                       options.bitrate,
                                        self._demodulator._constellation, 
                                        options.samples_per_symbol,
                                        options.differential, 
@@ -143,6 +222,7 @@ class rx_psk_block(gr.top_block):
                                        log=options.log)
         
         self.connect(self._source, self._receiver)
+        
 
     def snr(self):
         return self._receiver.snr()
@@ -199,6 +279,12 @@ if __name__ == "__main__":
     demods = digital.modulation_utils.type_1_demods()
 
     (options, args) = get_options(demods)
+    
+    from distutils.version import StrictVersion
+    if StrictVersion(Qt.qVersion()) >= StrictVersion("4.5.0"):
+        style = gr.prefs().get_string('qtgui', 'style', 'raster')
+        Qt.QApplication.setGraphicsSystem(style)
+    qapp = Qt.QApplication(sys.argv)
 
     demod = demods[options.modulation]
     tb = rx_psk_block(demod, options)
@@ -207,8 +293,19 @@ if __name__ == "__main__":
     print "*** BER estimator is inaccurate above about 10%\n"
     updater = status_thread(tb)
 
-    try:
-        tb.run()
-    except KeyboardInterrupt:
-        updater.done = True
-        updater = None
+    #===========================================================================
+    # try:
+    #     tb.run()
+    # except KeyboardInterrupt:
+    #     updater.done = True
+    #     updater = None
+    #===========================================================================
+        
+    tb.start()
+    tb.show()
+    
+    def quitting():
+        tb.stop()
+        tb.wait()
+    qapp.connect(qapp, Qt.SIGNAL("aboutToQuit()"), quitting)
+    qapp.exec_()
