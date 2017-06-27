@@ -20,7 +20,10 @@
 # Boston, MA 02110-1301, USA.
 #
 
-from gnuradio import gr, eng_notation
+from PyQt4 import Qt
+import sip
+
+from gnuradio import gr, eng_notation, qtgui
 from gnuradio.eng_option import eng_option
 from optparse import OptionParser
 import sys
@@ -56,10 +59,28 @@ class bert_transmit(gr.hier_block2):
         self.connect(self._bits, self._scrambler, self._pack, self._mod, self)
 
 
-class tx_psk_block(gr.top_block):
+class tx_psk_block(gr.top_block, Qt.QWidget):
     def __init__(self, mod, options):
 	gr.top_block.__init__(self, "tx_mpsk")
-
+        Qt.QWidget.__init__(self)
+        self.setWindowTitle("MPSK Tx")
+        
+        try:
+            self.setWindowIcon(Qt.QIcon.fromTheme('gnuradio-grc'))
+        except:
+            pass
+        self.top_scroll_layout = Qt.QVBoxLayout()
+        self.setLayout(self.top_scroll_layout)
+        self.top_scroll = Qt.QScrollArea()
+        self.top_scroll.setFrameStyle(Qt.QFrame.NoFrame)
+        self.top_scroll_layout.addWidget(self.top_scroll)
+        self.top_scroll.setWidgetResizable(True)
+        self.top_widget = Qt.QWidget()
+        self.top_scroll.setWidget(self.top_widget)
+        self.top_layout = Qt.QVBoxLayout(self.top_widget)
+        self.top_grid_layout = Qt.QGridLayout()
+        self.top_layout.addLayout(self.top_grid_layout)
+        
         self._modulator_class = mod
 
         # Get mod_kwargs
@@ -81,8 +102,51 @@ class tx_psk_block(gr.top_block):
             self._sink = blocks.file_sink(gr.sizeof_gr_complex, options.to_file)
         else:
             self._sink = blocks.null_sink(gr.sizeof_gr_complex)
+    
+        #Create GUI to see symbols constellation 
+        self.qtgui_const_sink = qtgui.const_sink_c(
+            400, #size
+            "", #name
+            1 #number of inputs
+        )
+        self.qtgui_const_sink.set_update_time(0.1)
+        self.qtgui_const_sink.set_y_axis(-2, 2)
+        self.qtgui_const_sink.set_x_axis(-2, 2)
+        self.qtgui_const_sink.set_trigger_mode(qtgui.TRIG_MODE_FREE, qtgui.TRIG_SLOPE_POS, 0.0, 0, "")
+        self.qtgui_const_sink.enable_autoscale(False)
+        self.qtgui_const_sink.enable_grid(False)
+        self.qtgui_const_sink.enable_axis_labels(True)
             
+        if not True:
+            self.qtgui_const_sink.disable_legend()
             
+        labels = ["", "", "", "", "",
+                  "", "", "", "", ""]
+        widths = [1, 1, 1, 1, 1,
+                  1, 1, 1, 1, 1]
+        colors = ["blue", "red", "red", "red", "red",
+                  "red", "red", "red", "red", "red"]
+        styles = [0, 0, 0, 0, 0,
+                  0, 0, 0, 0, 0]
+        markers = [0, 0, 0, 0, 0,
+                   0, 0, 0, 0, 0]
+        alphas = [1.0, 1.0, 1.0, 1.0, 1.0,
+                  1.0, 1.0, 1.0, 1.0, 1.0]
+        for i in xrange(1):
+            if len(labels[i]) == 0:
+                self.qtgui_const_sink.set_line_label(i, "Data {0}".format(i))
+            else:
+                self.qtgui_const_sink.set_line_label(i, labels[i])
+            self.qtgui_const_sink.set_line_width(i, widths[i])
+            self.qtgui_const_sink.set_line_color(i, colors[i])
+            self.qtgui_const_sink.set_line_style(i, styles[i])
+            self.qtgui_const_sink.set_line_marker(i, markers[i]) 
+            self.qtgui_const_sink.set_line_alpha(i, alphas[i])
+         
+        self._qtgui_const_sink_win = sip.wrapinstance(self.qtgui_const_sink.pyqwidget(), Qt.QWidget)
+        self.top_layout.addWidget(self._qtgui_const_sink_win)  
+        
+                    
         self._transmitter = bert_transmit(self._modulator._constellation,
                                           options.samples_per_symbol,
                                           options.differential,
@@ -91,8 +155,13 @@ class tx_psk_block(gr.top_block):
                                           verbose=options.verbose,
                                           log=options.log)
 
-        self.amp = blocks.multiply_const_cc(options.amplitude)
-	self.connect(self._transmitter, self.amp, self._sink)
+        self.amp = blocks.multiply_const_cc(options.amplitude)  
+               
+        self.connect(self._transmitter, self.amp, self._sink)
+        
+        self.connect(self.amp, self.qtgui_const_sink)
+    
+#     self.connect(self.amp, self.qtgui_const_sink)
 
 
 def get_options(mods):
@@ -131,10 +200,25 @@ if __name__ == "__main__":
 
     (options, args) = get_options(mods)
     
+    from distutils.version import StrictVersion
+    if StrictVersion(Qt.qVersion()) >= StrictVersion("4.5.0"):
+        style = gr.prefs().get_string('qtgui', 'style', 'raster')
+        Qt.QApplication.setGraphicsSystem(style)
+    qapp = Qt.QApplication(sys.argv)
+    
     mod = mods[options.modulation]
     tb = tx_psk_block(mod, options)
 
-    try:
-        tb.run()
-    except KeyboardInterrupt:
-        pass
+#     try:
+#         tb.run()
+#     except KeyboardInterrupt:
+#         pass
+
+    tb.start()
+    tb.show()
+    
+    def quitting():
+        tb.stop()
+        tb.wait()
+    qapp.connect(qapp, Qt.SIGNAL("aboutToQuit()"), quitting)
+    qapp.exec_()
