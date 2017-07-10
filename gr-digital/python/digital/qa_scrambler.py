@@ -43,13 +43,15 @@ class test_scrambler(gr_unittest.TestCase):
         self.tb = None
 
     def test_scrambler_descrambler(self):
-        src_data = (1,)*1000
+        src_data = (2,)*1000
         src = blocks.vector_source_b(src_data, False)
         scrambler = digital.scrambler_bb(0x8a, 0x7F, 7)     # CCSDS 7-bit scrambler
         descrambler = digital.descrambler_bb(0x8a, 0x7F, 7)
         dst = blocks.vector_sink_b()
         self.tb.connect(src, scrambler, descrambler, dst)
         self.tb.run()
+	#print tuple(src_data[:-8]),'\n'
+	#print tuple(dst.data()[8:]) 
         self.assertEqual(tuple(src_data[:-8]), dst.data()[8:]) # skip garbage during synchronization
 
     def test_additive_scrambler(self):

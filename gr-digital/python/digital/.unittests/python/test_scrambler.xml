@@ -1,0 +1,31 @@
+<testsuite errors="0" failures="1" name="unittest.suite.TestSuite" tests="6" time="1.573">
+  <testcase classname="__main__.test_scrambler" name="test_additive_scrambler" time="0.0014"></testcase>
+  <testcase classname="__main__.test_scrambler" name="test_additive_scrambler_reset" time="0.0018"></testcase>
+  <testcase classname="__main__.test_scrambler" name="test_additive_scrambler_reset_3bpb" time="0.0020"></testcase>
+  <testcase classname="__main__.test_scrambler" name="test_additive_scrambler_tags" time="0.0021"></testcase>
+  <testcase classname="__main__.test_scrambler" name="test_additive_scrambler_tags_oneway" time="0.0017"></testcase>
+  <testcase classname="__main__.test_scrambler" name="test_scrambler_descrambler" time="1.5635">
+    <failure type="exceptions.AssertionError">Tuples differ: (2, 2, 2, 2, 2, 2, 2, 2, 2, 2,... != (0L, 0L, 0L, 0L, 0L, 0L, 0L, 0...
+
+First differing element 0:
+2
+0
+
+Diff is 12896 characters long. Set self.maxDiff to None to see it.
+  File "/usr/lib/python2.7/unittest/case.py", line 331, in run
+    testMethod()
+  File "./qa_scrambler.py", line 55, in test_scrambler_descrambler
+    self.assertEqual(tuple(src_data[:-8]), dst.data()[8:]) # skip garbage during synchronization
+  File "/usr/lib/python2.7/unittest/case.py", line 515, in assertEqual
+    assertion_func(first, second, msg=msg)
+  File "/usr/lib/python2.7/unittest/case.py", line 755, in assertTupleEqual
+    self.assertSequenceEqual(tuple1, tuple2, msg, seq_type=tuple)
+  File "/usr/lib/python2.7/unittest/case.py", line 726, in assertSequenceEqual
+    self.fail(msg)
+  File "/usr/lib/python2.7/unittest/case.py", line 412, in fail
+    raise self.failureException(msg)
+    </failure>
+  </testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

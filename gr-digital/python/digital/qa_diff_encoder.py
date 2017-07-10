@@ -57,6 +57,7 @@ class test_diff_encoder(gr_unittest.TestCase):
         random.seed(0)
         modulus = 4
         src_data = make_random_int_tuple(1000, 0, modulus-1)
+	print src_data
         expected_result = src_data
         src = blocks.vector_source_b(src_data)
         enc = digital.diff_encoder_bb(modulus)

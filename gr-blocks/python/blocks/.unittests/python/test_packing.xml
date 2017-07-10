@@ -1,0 +1,23 @@
+<testsuite errors="0" failures="0" name="unittest.suite.TestSuite" tests="19" time="0.025">
+  <testcase classname="__main__.test_packing" name="test_001" time="0.0019"></testcase>
+  <testcase classname="__main__.test_packing" name="test_002" time="0.0006"></testcase>
+  <testcase classname="__main__.test_packing" name="test_003" time="0.0006"></testcase>
+  <testcase classname="__main__.test_packing" name="test_004" time="0.0006"></testcase>
+  <testcase classname="__main__.test_packing" name="test_005" time="0.0006"></testcase>
+  <testcase classname="__main__.test_packing" name="test_006" time="0.0016"></testcase>
+  <testcase classname="__main__.test_packing" name="test_007" time="0.0016"></testcase>
+  <testcase classname="__main__.test_packing" name="test_008" time="0.0005"></testcase>
+  <testcase classname="__main__.test_packing" name="test_009" time="0.0019"></testcase>
+  <testcase classname="__main__.test_packing" name="test_010" time="0.0007"></testcase>
+  <testcase classname="__main__.test_packing" name="test_011" time="0.0017"></testcase>
+  <testcase classname="__main__.test_packing" name="test_100a" time="0.0018"></testcase>
+  <testcase classname="__main__.test_packing" name="test_100b" time="0.0018"></testcase>
+  <testcase classname="__main__.test_packing" name="test_101a" time="0.0018"></testcase>
+  <testcase classname="__main__.test_packing" name="test_101b" time="0.0007"></testcase>
+  <testcase classname="__main__.test_packing" name="test_200a" time="0.0019"></testcase>
+  <testcase classname="__main__.test_packing" name="test_200b" time="0.0017"></testcase>
+  <testcase classname="__main__.test_packing" name="test_201a" time="0.0018"></testcase>
+  <testcase classname="__main__.test_packing" name="test_201b" time="0.0007"></testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

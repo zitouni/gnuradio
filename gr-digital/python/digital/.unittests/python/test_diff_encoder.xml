@@ -1,0 +1,7 @@
+<testsuite errors="0" failures="0" name="unittest.suite.TestSuite" tests="3" time="0.039">
+  <testcase classname="__main__.test_diff_encoder" name="test_diff_encdec_000" time="0.0032"></testcase>
+  <testcase classname="__main__.test_diff_encoder" name="test_diff_encdec_001" time="0.0019"></testcase>
+  <testcase classname="__main__.test_diff_encoder" name="test_diff_encdec_002" time="0.0335"></testcase>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
